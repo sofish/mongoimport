@@ -1,6 +1,6 @@
 {
   "name": "mongoimport",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "import JSON to mongodb collection",
   "main": "index.js",
   "scripts": {

@@ -32,8 +32,8 @@ function bot(config) {
       return db.close();
     }
 
-    // NOTE: fields should be writable
-    let fields = config.fields.slice();
+    // remove empty fields;
+    let fields = config.fields.filter(item => !!item);
 
     db.collection(config.collection).insertMany(fields, (err, ret) => {
       if(err) return callback(err);
