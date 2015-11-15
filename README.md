@@ -1,6 +1,8 @@
+![build status](https://travis-ci.org/sofish/mongoimport.svg?branch=master)
+
 # mongoimport
 
-import JSON to mongodb, associate with [sofish/log2json](/sofish/log2json) to manage nginx logs.
+import JSON to mongodb, associate with [sofish/log2json](https://github.com/sofish/log2json) to manage nginx logs.
 
 ```php
 $ npm install mongoimport --save
