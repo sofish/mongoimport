@@ -32,7 +32,10 @@ function bot(config) {
       return db.close();
     }
 
-    db.collection(config.collection).insertMany(config.fields, (err, ret) => {
+    // NOTE: fields should be writable
+    let fields = config.fields.slice();
+
+    db.collection(config.collection).insertMany(fields, (err, ret) => {
       if(err) return callback(err);
       db.close();
       callback(null, ret);
