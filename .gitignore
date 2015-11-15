@@ -1,0 +1,4 @@
+.idea/
+*.lock
+*.log
+node_modules

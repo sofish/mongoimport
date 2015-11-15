@@ -1,0 +1,27 @@
+{
+  "name": "mongoimport",
+  "version": "1.0.0",
+  "description": "import JSON to mongodb collection",
+  "main": "index.js",
+  "scripts": {
+    "test": "node ./test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sofish/mongoimport.git"
+  },
+  "keywords": [
+    "mongodb",
+    "json",
+    "import"
+  ],
+  "author": "sofish <happinesz@gmail.com> (http://sofi.sh/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sofish/mongoimport/issues"
+  },
+  "homepage": "https://github.com/sofish/mongoimport",
+  "dependencies": {
+    "mongodb": "^2.0.48"
+  }
+}
