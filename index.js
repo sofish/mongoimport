@@ -34,6 +34,7 @@ function bot(config) {
 
     // remove empty fields;
     let fields = config.fields.filter(item => !!item);
+    if(!fields.length) return db.close(); // fields can be empty
 
     db.collection(config.collection).insertMany(fields, (err, ret) => {
       if(err) return callback(err);
