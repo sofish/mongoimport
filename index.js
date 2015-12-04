@@ -11,7 +11,7 @@ function bot(config) {
    *  {
    *    fields: [],                 // {array} data to import
    *    db: 'name',                 // {string} name of db
-   *    collection: 'collection'    // {string} name of collection
+   *    collection: 'collection'    // {string|function} name of collection, or return a name
    *    host: 'localhost:27017',    // {string} [optional] by default is 27017
    *    username: 'sofish',         // {string} [optional]
    *    password: '***'             // {string} [optional]
@@ -36,7 +36,9 @@ function bot(config) {
     let fields = config.fields.filter(item => !!item);
     if(!fields.length) return db.close(); // fields can be empty
 
-    db.collection(config.collection).insertMany(fields, (err, ret) => {
+    var c = config.collection;
+    if(typeof c === 'function') c = c(fields);
+    db.collection(c).insertMany(fields, (err, ret) => {
       if(err) return callback(err);
       db.close();
       callback(null, ret);

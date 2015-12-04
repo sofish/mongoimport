@@ -3,7 +3,9 @@
 const mongoimport = require('../');
 var host = '127.0.0.1:27017';
 var db = 'mongoimport';
-var collection = 'test';
+var collection = function(fields) {
+  return fields[0].name;
+};
 var fields = [{ name: 'sofish', createdAt: '1986', isBot: 'guess me', isFun: 'try me' }];
 var config = {host, db, collection, callback, fields}
 
