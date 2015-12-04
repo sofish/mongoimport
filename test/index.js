@@ -6,7 +6,11 @@ var db = 'mongoimport';
 var collection = function(field) {
   return field.name;
 };
-var fields = [{ name: 'sofish', createdAt: '1986', isBot: 'guess me', isFun: 'try me' }];
+var fields = [
+  { name: 'sofish', createdAt: '1986', isBot: 'guess me', isFun: 'try me' },
+  { name: 'perf', foo: 'bar' },
+  { name: 'error', hello: 'world' }
+];
 var config = {host, db, collection, callback, fields}
 
 mongoimport(config, callback);

@@ -52,10 +52,11 @@ function bot(config) {
       callback({messsage: 'not matched, no `collection` is specific'});
     }
 
+    var i = 0, l = Object.keys(collections).length - 1;
     for(let c in collections) {
       db.collection(c).insertMany(collections[c], (err, ret) => {
+        if(i++ === l) db.close();
         if(err) return callback(err);
-        db.close();
         callback(null, ret);
       });
     }
