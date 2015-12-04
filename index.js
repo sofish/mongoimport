@@ -37,11 +37,27 @@ function bot(config) {
     if(!fields.length) return db.close(); // fields can be empty
 
     var c = config.collection;
-    if(typeof c === 'function') c = c(fields);
-    db.collection(c).insertMany(fields, (err, ret) => {
-      if(err) return callback(err);
-      db.close();
-      callback(null, ret);
-    });
+    var collections = {};
+
+    // map collection
+    if(typeof c === 'function') {
+      fields.forEach(item => {
+        var name = c(item);
+        if(collections[name]) return collections[name].push(item);
+        collections[name] = [item];
+      })
+    } else if(typeof c === 'string') {
+      collections[c] = fields;
+    } else {
+      callback({messsage: 'not matched, no `collection` is specific'});
+    }
+
+    for(let c in collections) {
+      db.collection(c).insertMany(collections[c], (err, ret) => {
+        if(err) return callback(err);
+        db.close();
+        callback(null, ret);
+      });
+    }
   });
 };
