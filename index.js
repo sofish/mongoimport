@@ -1,30 +1,35 @@
 'use strict';
 
+const {promisify} = require('util');
+
 const {MongoClient} = require('mongodb');
 
+require('promise.prototype.finally').shim();
 
-/* Helper function to import your data into a MongoDB database
+
+/**
+ * Helper function to import your data into a MongoDB database
+ *
  * @param {object} config
  *  {
- *    fields: [],                    // {array} data to import
- *    database: 'name',              // {string} name of database
- *    collection: 'collection'       // {string|function} name of collection, or return a name
- *    host: 'localhost:27017',       // {string} [optional] by default is 27017
- *    username: 'sofish',            // {string} [optional]
- *    password: '***'                // {string} [optional]
- *    callback: (err, client) => {}  // {function} [optional]
+ *    fields: [],               // {array} data to import
+ *    database: 'name',         // {string} name of database
+ *    collection: 'collection'  // {string|function} name of collection, or return a name
+ *    host: 'localhost:27017',  // {string} [optional] by default is 27017
+ *    username: 'sofish',       // {string} [optional]
+ *    password: '***'           // {string} [optional]
  *  }
  */
-function bot({callback = () => {}, collection, database, fields,
-host = '127.0.0.1:27027', password, username}) {
-  const auth = username ? `${username}:${password}@` : '';
+function bot({collection, database, fields, host = '127.0.0.1:27027', password,
+              username})
+{
   if(!fields) {
-    return callback();
+    return;
   }
 
   // remove empty fields;
   fields = fields.filter(item => !!item);
-  if(!fields.length) return callback();  // fields can be empty
+  if(!fields.length) return;  // fields can be empty
 
   // map collection
   const collections = {};
@@ -40,19 +45,20 @@ host = '127.0.0.1:27027', password, username}) {
     throw new Error('`collection` is not specified');
   }
 
-  MongoClient.connect(`mongodb://${auth}${host}/${database}`, (err, client) => {
-    if(err) return callback(err);
+  const auth = username ? `${username}:${password}@` : '';
 
-    const db = client.db(database)
+  return MongoClient.connect(`mongodb://${auth}${host}/${database}`)
+  .then(function(client)
+  {
+    const promises = Object.keys(collections).map(function(key)
+    {
+      const collection = this.collection(key);
 
-    var i = 0, l = Object.keys(collections).length - 1;
-    for(let c in collections) {
-      db.collection(c).insertMany(collections[c], (err, ret) => {
-        if(i++ === l) client.close();
-        if(err) return callback(err);
-        callback(null, ret);
-      });
-    }
+      return promisify(collection.insertMany.bind(collection))(collections[key]);
+    },
+    client.db(database));
+
+    return Promise.all(promises).finally(client.close.bind(client));
   });
 };
 

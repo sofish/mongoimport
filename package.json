@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/sofish/mongoimport",
   "dependencies": {
-    "mongodb": "^3.0.1"
+    "mongodb": "^3.0.1",
+    "promise.prototype.finally": "^3.1.0"
   }
 }
