@@ -1,19 +1,19 @@
 'use strict';
 
-const mongoimport = require('../');
-var host = '127.0.0.1:27017';
-var db = 'mongoimport';
-var collection = function(field) {
+const mongoimport = require('..');
+
+const host = '127.0.0.1:27017';
+const database = 'mongoimport';
+const collection = function(field) {
   return field.name;
 };
-var fields = [
+const fields = [
   { name: 'sofish', createdAt: '1986', isBot: 'guess me', isFun: 'try me' },
   { name: 'perf', foo: 'bar' },
   { name: 'error', hello: 'world' }
 ];
-var config = {host, db, collection, callback, fields}
 
-mongoimport(config, callback);
+mongoimport({host, database, collection, callback, fields});
 
 function callback(err, ret) {
   if(err) {

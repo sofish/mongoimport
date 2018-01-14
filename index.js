@@ -1,57 +1,50 @@
 'use strict';
 
-const mongodb = require('mongodb');
-const client = mongodb.MongoClient;
+const {MongoClient} = require('mongodb');
 
-module.exports = bot;
 
-function bot(config) {
-  /* Bot that helps to import your data into db
-   * @param {object} config
-   *  {
-   *    fields: [],                 // {array} data to import
-   *    db: 'name',                 // {string} name of db
-   *    collection: 'collection'    // {string|function} name of collection, or return a name
-   *    host: 'localhost:27017',    // {string} [optional] by default is 27017
-   *    username: 'sofish',         // {string} [optional]
-   *    password: '***'             // {string} [optional]
-   *    callback: (err, db) => {}   // {function} [optional]
-   *  }
-   */
+/* Helper function to import your data into a MongoDB database
+ * @param {object} config
+ *  {
+ *    fields: [],                    // {array} data to import
+ *    database: 'name',              // {string} name of database
+ *    collection: 'collection'       // {string|function} name of collection, or return a name
+ *    host: 'localhost:27017',       // {string} [optional] by default is 27017
+ *    username: 'sofish',            // {string} [optional]
+ *    password: '***'                // {string} [optional]
+ *    callback: (err, client) => {}  // {function} [optional]
+ *  }
+ */
+function bot({callback = () => {}, collection, database, fields,
+host = '127.0.0.1:27027', password, username}) {
+  const auth = username ? `${username}:${password}@` : '';
 
-  if(!config.host) config.host = '127.0.0.1:27027';
-  if(!config.callback) config.callback = () => {};
-
-  var callback = config.callback;
-  var auth = config.username ? `${config.username}:${config.password}@` : '';
-  client.connect(`mongodb://${auth}${config.host}/${config.db}`, (err, client) => {
+  MongoClient.connect(`mongodb://${auth}${host}/${database}`, (err, client) => {
     if(err) return callback(err);
 
-    const db = client.db(config.db)
+    const db = client.db(database)
 
-    if(!config.fields || !config.fields.length) {
-      callback(null);
-      return client.close();
+    if(!(fields && fields.length)) {
+      client.close();
+      return callback();
     }
 
     // remove empty fields;
-    let fields = config.fields.filter(item => !!item);
-    if(!fields.length) return client.close(); // fields can be empty
-
-    var c = config.collection;
-    var collections = {};
+    fields = fields.filter(item => !!item);
+    if(!fields.length) return client.close();  // fields can be empty
 
     // map collection
-    if(typeof c === 'function') {
+    const collections = {};
+    if(typeof collection === 'function') {
       fields.forEach(item => {
-        var name = c(item);
+        const name = collection(item);
         if(collections[name]) return collections[name].push(item);
         collections[name] = [item];
       })
-    } else if(typeof c === 'string') {
-      collections[c] = fields;
+    } else if(typeof collection === 'string') {
+      collections[collection] = fields;
     } else {
-      callback({messsage: 'not matched, no `collection` is specific'});
+      return callback({messsage: 'not matched, no `collection` is specific'});
     }
 
     var i = 0, l = Object.keys(collections).length - 1;
@@ -64,3 +57,6 @@ function bot(config) {
     }
   });
 };
+
+
+module.exports = bot;
