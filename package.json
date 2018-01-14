@@ -22,6 +22,6 @@
   },
   "homepage": "https://github.com/sofish/mongoimport",
   "dependencies": {
-    "mongodb": "^2.0.48"
+    "mongodb": "^3.0.1"
   }
 }

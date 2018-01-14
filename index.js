@@ -24,17 +24,19 @@ function bot(config) {
 
   var callback = config.callback;
   var auth = config.username ? `${config.username}:${config.password}@` : '';
-  client.connect(`mongodb://${auth}${config.host}/${config.db}`, (err, db) => {
+  client.connect(`mongodb://${auth}${config.host}/${config.db}`, (err, client) => {
     if(err) return callback(err);
+
+    const db = client.db(config.db)
 
     if(!config.fields || !config.fields.length) {
       callback(null);
-      return db.close();
+      return client.close();
     }
 
     // remove empty fields;
     let fields = config.fields.filter(item => !!item);
-    if(!fields.length) return db.close(); // fields can be empty
+    if(!fields.length) return client.close(); // fields can be empty
 
     var c = config.collection;
     var collections = {};
@@ -55,7 +57,7 @@ function bot(config) {
     var i = 0, l = Object.keys(collections).length - 1;
     for(let c in collections) {
       db.collection(c).insertMany(collections[c], (err, ret) => {
-        if(i++ === l) db.close();
+        if(i++ === l) client.close();
         if(err) return callback(err);
         callback(null, ret);
       });
