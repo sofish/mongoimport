@@ -18,34 +18,32 @@ const {MongoClient} = require('mongodb');
 function bot({callback = () => {}, collection, database, fields,
 host = '127.0.0.1:27027', password, username}) {
   const auth = username ? `${username}:${password}@` : '';
+  if(!fields) {
+    return callback();
+  }
+
+  // remove empty fields;
+  fields = fields.filter(item => !!item);
+  if(!fields.length) return callback();  // fields can be empty
+
+  // map collection
+  const collections = {};
+  if(typeof collection === 'function') {
+    fields.forEach(item => {
+      const name = collection(item);
+      if(collections[name]) return collections[name].push(item);
+      collections[name] = [item];
+    })
+  } else if(typeof collection === 'string') {
+    collections[collection] = fields;
+  } else {
+    throw new Error('`collection` is not specified');
+  }
 
   MongoClient.connect(`mongodb://${auth}${host}/${database}`, (err, client) => {
     if(err) return callback(err);
 
     const db = client.db(database)
-
-    if(!(fields && fields.length)) {
-      client.close();
-      return callback();
-    }
-
-    // remove empty fields;
-    fields = fields.filter(item => !!item);
-    if(!fields.length) return client.close();  // fields can be empty
-
-    // map collection
-    const collections = {};
-    if(typeof collection === 'function') {
-      fields.forEach(item => {
-        const name = collection(item);
-        if(collections[name]) return collections[name].push(item);
-        collections[name] = [item];
-      })
-    } else if(typeof collection === 'string') {
-      collections[collection] = fields;
-    } else {
-      return callback({messsage: 'not matched, no `collection` is specific'});
-    }
 
     var i = 0, l = Object.keys(collections).length - 1;
     for(let c in collections) {
