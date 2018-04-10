@@ -40,10 +40,13 @@ function bot({collection, database, drop, fields, host = '127.0.0.1:27027',
   // map collection
   const collections = {};
   if(typeof collection === 'function') {
-    fields.forEach(item => {
+    fields.forEach(function(item)
+    {
       const name = collection(item);
-      if(collections[name]) return collections[name].push(item);
-      collections[name] = [item];
+
+      let col = collections[name]
+      if(!col) collections[name] = col = [];
+      col.push(item);
     })
   } else if(typeof collection === 'string') {
     collections[collection] = fields;
