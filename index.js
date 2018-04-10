@@ -7,6 +7,12 @@ const {MongoClient} = require('mongodb');
 require('promise.prototype.finally').shim();
 
 
+function ignoreNamespaceNotFound(error)
+{
+  if(error.codeName !== 'NamespaceNotFound') return Promise.reject(error)
+}
+
+
 /**
  * Helper function to import your data into a MongoDB database
  *
@@ -20,8 +26,8 @@ require('promise.prototype.finally').shim();
  *    password: '***'           // {string} [optional]
  *  }
  */
-function bot({collection, database, fields, host = '127.0.0.1:27027', password,
-              username})
+function bot({collection, database, drop, fields, host = '127.0.0.1:27027',
+              password, username})
 {
   if(!fields) {
     return;
@@ -54,7 +60,19 @@ function bot({collection, database, fields, host = '127.0.0.1:27027', password,
     {
       const collection = this.collection(key);
 
-      return promisify(collection.insertMany.bind(collection))(collections[key]);
+      const promisedDrop       = promisify(collection.drop      .bind(collection))
+      const promisedInsertMany = promisify(collection.insertMany.bind(collection))
+
+      function insertMany()
+      {
+        return promisedInsertMany(collections[key]);
+      }
+
+      if(!drop) return insertMany();
+
+      return promisedDrop()
+      .catch(ignoreNamespaceNotFound)
+      .then(insertMany)
     },
     client.db(database));
 
