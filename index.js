@@ -1,64 +1,87 @@
 'use strict';
 
-const mongodb = require('mongodb');
-const client = mongodb.MongoClient;
+const {promisify} = require('util');
 
-module.exports = bot;
+const {MongoClient} = require('mongodb');
 
-function bot(config) {
-  /* Bot that helps to import your data into db
-   * @param {object} config
-   *  {
-   *    fields: [],                 // {array} data to import
-   *    db: 'name',                 // {string} name of db
-   *    collection: 'collection'    // {string|function} name of collection, or return a name
-   *    host: 'localhost:27017',    // {string} [optional] by default is 27017
-   *    username: 'sofish',         // {string} [optional]
-   *    password: '***'             // {string} [optional]
-   *    callback: (err, db) => {}   // {function} [optional]
-   *  }
-   */
+require('promise.prototype.finally').shim();
 
-  if(!config.host) config.host = '127.0.0.1:27027';
-  if(!config.callback) config.callback = () => {};
 
-  var callback = config.callback;
-  var auth = config.username ? `${config.username}:${config.password}@` : '';
-  client.connect(`mongodb://${auth}${config.host}/${config.db}`, (err, db) => {
-    if(err) return callback(err);
+function ignoreNamespaceNotFound(error)
+{
+  if(error.codeName !== 'NamespaceNotFound') return Promise.reject(error)
+}
 
-    if(!config.fields || !config.fields.length) {
-      callback(null);
-      return db.close();
-    }
 
-    // remove empty fields;
-    let fields = config.fields.filter(item => !!item);
-    if(!fields.length) return db.close(); // fields can be empty
+/**
+ * Helper function to import your data into a MongoDB database
+ *
+ * @param {object} config
+ *  {
+ *    fields: [],               // {array} data to import
+ *    database: 'name',         // {string} name of database
+ *    collection: 'collection'  // {string|function} name of collection, or return a name
+ *    host: 'localhost:27017',  // {string} [optional] by default is 27017
+ *    username: 'sofish',       // {string} [optional]
+ *    password: '***'           // {string} [optional]
+ *  }
+ */
+function bot({collection, database, drop, fields, host = '127.0.0.1:27027',
+              password, username})
+{
+  if(!fields) {
+    return;
+  }
 
-    var c = config.collection;
-    var collections = {};
+  // remove empty fields;
+  fields = fields.filter(item => !!item);
+  if(!fields.length) return;  // fields can be empty
 
-    // map collection
-    if(typeof c === 'function') {
-      fields.forEach(item => {
-        var name = c(item);
-        if(collections[name]) return collections[name].push(item);
-        collections[name] = [item];
-      })
-    } else if(typeof c === 'string') {
-      collections[c] = fields;
-    } else {
-      callback({messsage: 'not matched, no `collection` is specific'});
-    }
+  // map collection
+  const collections = {};
+  if(typeof collection === 'function') {
+    fields.forEach(function(item)
+    {
+      const name = collection(item);
 
-    var i = 0, l = Object.keys(collections).length - 1;
-    for(let c in collections) {
-      db.collection(c).insertMany(collections[c], (err, ret) => {
-        if(i++ === l) db.close();
-        if(err) return callback(err);
-        callback(null, ret);
-      });
-    }
+      let col = collections[name]
+      if(!col) collections[name] = col = [];
+      col.push(item);
+    })
+  } else if(typeof collection === 'string') {
+    collections[collection] = fields;
+  } else {
+    throw new Error('`collection` is not specified');
+  }
+
+  const auth = username ? `${username}:${password}@` : '';
+
+  return MongoClient.connect(`mongodb://${auth}${host}/${database}`)
+  .then(function(client)
+  {
+    const promises = Object.keys(collections).map(function(key)
+    {
+      const collection = this.collection(key);
+
+      const promisedDrop       = promisify(collection.drop      .bind(collection))
+      const promisedInsertMany = promisify(collection.insertMany.bind(collection))
+
+      function insertMany()
+      {
+        return promisedInsertMany(collections[key]);
+      }
+
+      if(!drop) return insertMany();
+
+      return promisedDrop()
+      .catch(ignoreNamespaceNotFound)
+      .then(insertMany)
+    },
+    client.db(database));
+
+    return Promise.all(promises).finally(client.close.bind(client));
   });
 };
+
+
+module.exports = bot;
